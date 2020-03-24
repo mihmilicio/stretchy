@@ -18,8 +18,8 @@ if (!Element.prototype.matches) {
 }
 
 function $$(expr, con) {
-	return expr instanceof Node || expr instanceof Window? [expr] :
-	       [].slice.call(typeof expr == "string"? (con || document).querySelectorAll(expr) : expr || []);
+	return expr instanceof Node || expr instanceof Window ? [expr] :
+		[].slice.call(typeof expr == "string" ? (con || document).querySelectorAll(expr) : expr || []);
 }
 
 var _ = self.Stretchy = {
@@ -32,7 +32,7 @@ var _ = self.Stretchy = {
 	script: document.currentScript || $$("script").pop(),
 
 	// Autosize one element. The core of Stretchy.
-	resize: function(element) {
+	resize: function (element) {
 		if (!_.resizes(element)) {
 			return;
 		}
@@ -85,7 +85,7 @@ var _ = self.Stretchy = {
 				// huge number, and read that back to see what it was clipped to
 				// and increment width by that much, iteratively
 
-				for (var i=0; i<10; i++) { // max iterations
+				for (var i = 0; i < 10; i++) { // max iterations
 					element.scrollLeft = 1e+10;
 
 					if (element.scrollLeft == 0) {
@@ -103,7 +103,7 @@ var _ = self.Stretchy = {
 			}
 		}
 		else if (type == "select") {
-			var selectedIndex = element.selectedIndex > 0? element.selectedIndex : 0;
+			var selectedIndex = element.selectedIndex > 0 ? element.selectedIndex : 0;
 
 			// Need to use dummy element to measure :(
 			var option = document.createElement("_");
@@ -113,21 +113,41 @@ var _ = self.Stretchy = {
 			// The name of the appearance property, as it might be prefixed
 			var appearance;
 
-			for (var property in cs) {
-				var value = cs[property];
-				if (!/^(width|webkitLogicalWidth|length)$/.test(property) && typeof value == "string") {
-					option.style[property] = value;
+			if (cs.cssText !== '') {
+				option.style.cssText = cs.cssText;
 
-					if (/appearance$/i.test(property)) {
-						appearance = property;
-					}
+				if (cs['apperance']) {
+					appearance = 'appearance';
+				} else if (cs['-webkit-apperance']) {
+					appearance = '-webkit-appearance';
+				} else if (cs['-moz-apperance']) {
+					appearance = '-moz-appearance';
+				} else if (cs['webkitAppearance']) {
+					appearance = 'webkitAppearance';
 				}
+			} else {
+				var cssText = Object.values(cs).reduce(
+					function (css, propertyName) {
+						if (!/^(width|webkitLogicalWidth|length|inline-size)$/.test(propertyName) && typeof cs.getPropertyValue(propertyName) == "string") {
+							if (/appearance$/i.test(propertyName)) {
+								appearance = propertyName;
+							}
+
+							return `${css}${propertyName}:${cs.getPropertyValue(propertyName)};`
+						} else {
+							return css;
+						}
+
+					}
+				);
+
+				option.style.cssText = cssText
 			}
 
 			option.style.width = "";
 
 			if (option.offsetWidth > 0) {
-				element.style.width = option.offsetWidth + "px";
+				element.style.width = option.offsetWidth + 8 + "px"; //magic number, needs discussing
 
 				if (!cs[appearance] || cs[appearance] !== "none") {
 					// Account for arrow
@@ -145,7 +165,7 @@ var _ = self.Stretchy = {
 	},
 
 	// Autosize multiple elements
-	resizeAll: function(elements) {
+	resizeAll: function (elements) {
 		$$(elements || _.selectors.base).forEach(function (element) {
 			_.resize(element);
 		});
@@ -154,25 +174,25 @@ var _ = self.Stretchy = {
 	active: true,
 
 	// Will stretchy do anything for this element?
-	resizes: function(element) {
+	resizes: function (element) {
 		return element &&
-		       element.parentNode &&
-		       element.matches &&
-		       element.matches(_.selectors.base) &&
-		       element.matches(_.selectors.filter);
+			element.parentNode &&
+			element.matches &&
+			element.matches(_.selectors.base) &&
+			element.matches(_.selectors.filter);
 	},
 
-	init: function(){
+	init: function () {
 		_.selectors.filter = _.script.getAttribute("data-filter") ||
-		                     ($$("[data-stretchy-filter]").pop() || document.body).getAttribute("data-stretchy-filter") || _.selectors.filter;
+			($$("[data-stretchy-filter]").pop() || document.body).getAttribute("data-stretchy-filter") || _.selectors.filter;
 
 		_.resizeAll();
 
 		// Listen for new elements
 		if (self.MutationObserver && !_.observer) {
-			_.observer = new MutationObserver(function(mutations) {
+			_.observer = new MutationObserver(function (mutations) {
 				if (_.active) {
-					mutations.forEach(function(mutation) {
+					mutations.forEach(function (mutation) {
 						if (mutation.type == "childList") {
 							_.resizeAll(mutation.addedNodes);
 						}
@@ -200,12 +220,12 @@ else {
 	document.addEventListener("DOMContentLoaded", _.init);
 }
 
-window.addEventListener("load", function(){
+window.addEventListener("load", function () {
 	_.resizeAll();
 });
 
 // Listen for changes
-var listener = function(evt) {
+var listener = function (evt) {
 	if (_.active) {
 		_.resize(evt.target);
 	}
